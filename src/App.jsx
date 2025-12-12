@@ -141,7 +141,7 @@ function App() {
         // QUAN TRỌNG: Class này giúp popup định vị đúng chỗ
         <div className="pdf-viewer-wrapper" ref={pdfWrapperRef}>
           
-          <div className="pdf-container" ref={documentRef} onMouseUp={handleMouseUp}>
+          <div className="pdf-container" ref={documentRef} onMouseUp={handleMouseUp} onTouchEnd={handleMouseUp}>
             <Document 
                 file={pdfFile} 
                 onLoadSuccess={onDocumentLoadSuccess}
