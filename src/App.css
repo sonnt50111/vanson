@@ -1,0 +1,103 @@
+/* src/App.css */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  font-family: sans-serif;
+  min-height: 100vh;
+  background-color: #f4f7f9;
+}
+
+h1 {
+  color: #0056b3;
+}
+
+.upload-section {
+  margin-bottom: 20px;
+  padding: 30px;
+  border: 3px dashed #a0c3e1;
+  border-radius: 12px;
+  text-align: center;
+  background-color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.upload-section input[type="file"] {
+  margin-bottom: 10px;
+}
+
+.pdf-viewer-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pdf-container {
+  box-shadow: 0px 8px 20px rgba(0,0,0,0.15);
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  /* Quan trọng: để vị trí popup được tính toán chính xác relative với khung này */
+  position: relative; 
+  overflow: hidden; /* Để góc bo tròn đẹp hơn */
+}
+
+.controls {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+button {
+  padding: 10px 20px;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  background-color: #007bff;
+  color: white;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.page-info {
+    font-weight: bold;
+    color: #333;
+}
+
+/* Popup định nghĩa */
+.definition-popup {
+  position: absolute; /* Dùng absolute để dễ dàng căn chỉnh theo màn hình */
+  z-index: 1000;
+  background: #ffffff;
+  border: 1px solid #007bff;
+  box-shadow: 0px 6px 18px rgba(0,0,0,0.3);
+  padding: 15px;
+  border-radius: 8px;
+  max-width: 350px;
+  color: #333333;  /* Chữ màu đen đậm */
+  min-width: 200px; /* Đảm bảo khung đủ rộng */
+  font-size: 14px;
+  line-height: 1.5;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none; /* Quan trọng: để không chặn click chuột trên PDF */
+}
+
+.popup-loading {
+  color: #007bff;
+  font-style: italic;
+}
+
+.popup-content strong {
+  color: #0056b3;
+}
