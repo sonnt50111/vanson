@@ -16,18 +16,18 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 const API_KEY = "AIzaSyCBn5eRpwQKRrDl1VLjl_mxoEETAoIIJAs"; 
 
 const genAI = new GoogleGenerativeAI(API_KEY);
-// Sử dụng model Flash (Nhanh và rẻ)
-// Thử phương án B: Dùng tên phiên bản cụ thể của Flash
+
+// --- SỬA 1: Dùng model 1.5-flash để ổn định và tránh lỗi Quota (429) ---
 const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
 function App() {
   const [pdfFile, setPdfFile] = useState(null);
   const [numPages, setNumPages] = useState(null);
   const [pageNumber, setPageNumber] = useState(1);
-  // Thêm loading để hiển thị trạng thái chờ
   const [popup, setPopup] = useState({ show: false, x: 0, y: 0, content: '', loading: false });
 
   const documentRef = useRef(null);
-  const pdfWrapperRef = useRef(null); // Ref để tham chiếu wrapper
+  const pdfWrapperRef = useRef(null);
 
   // --- Xử lý tải file ---
   const onFileChange = (event) => {
@@ -43,38 +43,42 @@ function App() {
     setNumPages(numPages);
   }
 
-  // --- Xử lý bôi đen text ---
-  const handleMouseUp = async (event) => {
+  // --- SỬA 2: Xử lý bôi đen text (Thêm setTimeout cho Mobile) ---
+  const handleMouseUp = (event) => {
     // Nếu click ra ngoài vùng sách thì không làm gì
-    if (!documentRef.current || !documentRef.current.contains(event.target)) {
+    if (documentRef.current && !documentRef.current.contains(event.target)) {
         return;
     }
-    
-    const selection = window.getSelection();
-    const text = selection.toString().trim();
 
-    if (text && text.length > 0) {
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
+    // QUAN TRỌNG: Dùng setTimeout để chờ điện thoại hoàn tất việc bôi đen
+    setTimeout(async () => {
+        const selection = window.getSelection();
+        const text = selection ? selection.toString().trim() : "";
 
-      // Tính vị trí Popup (Quan trọng: Cần khớp với CSS)
-      setPopup({
-        show: true,
-        x: rect.left + rect.width / 2, 
-        y: rect.top + window.scrollY, 
-        content: '',
-        loading: true
-      });
+        if (text && text.length > 0) {
+            console.log("Đã chọn được chữ:", text); // Debug log
 
-      // Gọi hàm dịch
-      await askGemini(text);
-    } else {
-      // Nếu click mà không bôi đen chữ nào -> Đóng popup
-      setPopup(prev => ({ ...prev, show: false }));
-    }
+            // Lấy vị trí để hiện Popup
+            const range = selection.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+
+            // Tính toán vị trí (cộng thêm scrollY để không bị lệch khi cuộn trang)
+            setPopup({
+                show: true,
+                x: rect.left + rect.width / 2, 
+                y: rect.top + window.scrollY, 
+                content: '',
+                loading: true
+            });
+
+            // Gọi hàm dịch
+            await askGemini(text);
+        } 
+        // Lưu ý: Không cần 'else setPopup(false)' ở đây vì useEffect bên dưới đã lo việc đóng popup
+    }, 300); // Chờ 0.3 giây (Thời gian đủ để điện thoại hiện menu copy xong)
   };
 
-  // --- Gọi Gemini API (Đã tối ưu) ---
+  // --- Gọi Gemini API ---
   const askGemini = async (selectedText) => {
     if (!API_KEY) {
         setPopup(prev => ({ ...prev, loading: false, content: "⚠️ Chưa có API Key!" }));
@@ -82,7 +86,6 @@ function App() {
     }
 
     try {
-      // Cập nhật Prompt: Hỗ trợ Anh/Hàn -> Việt + Nguồn gốc từ
       const prompt = `
         Bạn là từ điển đa ngôn ngữ (Anh-Việt và Hàn-Việt).
         Hãy phân tích từ/cụm từ: "${selectedText}" theo 3 ý sau:
@@ -94,7 +97,6 @@ function App() {
         Lưu ý: Trình bày rõ ràng, dùng markdown (**in đậm** tiêu đề), tổng độ dài dưới 80 từ.
       `;
 
-      // SỬA: Dùng generationConfig chuẩn để tránh lỗi 400
       const result = await model.generateContent({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: { 
@@ -109,22 +111,30 @@ function App() {
 
     } catch (error) {
       console.error("Lỗi API:", error);
-      setPopup(prev => ({ ...prev, loading: false, content: "⚠️ Lỗi kết nối Gemini (Kiểm tra mạng/Key)." }));
+      setPopup(prev => ({ ...prev, loading: false, content: "⚠️ Lỗi kết nối Gemini (Hoặc hết hạn mức Free)." }));
     }
   };
   
-  // Xử lý click ra ngoài để đóng popup
+  // --- SỬA 3: Xử lý click/chạm ra ngoài để đóng popup ---
   useEffect(() => {
       const handleClickOutside = () => {
           const selection = window.getSelection();
-          if (selection.toString().trim() === "" && popup.show) {
+          // Nếu không có chữ nào được bôi đen và popup đang mở -> thì tắt popup
+          if ((!selection || selection.toString().trim() === "") && popup.show) {
              setPopup(prev => ({ ...prev, show: false }));
           }
       }
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [popup.show]);
 
+      // Lắng nghe sự kiện chuột (PC)
+      document.addEventListener("mousedown", handleClickOutside);
+      // Lắng nghe sự kiện chạm (Mobile) - Cần thiết để tắt popup trên điện thoại
+      document.addEventListener("touchstart", handleClickOutside);
+
+      return () => {
+          document.removeEventListener("mousedown", handleClickOutside);
+          document.removeEventListener("touchstart", handleClickOutside);
+      };
+  }, [popup.show]);
 
   return (
     <div className="app-container">
@@ -138,9 +148,9 @@ function App() {
       )}
 
       {pdfFile && (
-        // QUAN TRỌNG: Class này giúp popup định vị đúng chỗ
         <div className="pdf-viewer-wrapper" ref={pdfWrapperRef}>
           
+          {/* QUAN TRỌNG: Phải có cả onMouseUp và onTouchEnd */}
           <div className="pdf-container" ref={documentRef} onMouseUp={handleMouseUp} onTouchEnd={handleMouseUp}>
             <Document 
                 file={pdfFile} 
@@ -190,8 +200,8 @@ function App() {
                     className="popup-content" 
                     dangerouslySetInnerHTML={{ 
                         __html: (typeof popup.content === 'string' ? popup.content : '')
-                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Xử lý in đậm markdown
-                            .replace(/\n/g, '<br/>') // Xuống dòng
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/\n/g, '<br/>')
                     }} 
                 />
               )}
