@@ -12,7 +12,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
-const API_KEY = "AIzaSyCBn5eRpwQKRrDl1VLjl_mxoEETAoIIJAs"; 
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 
 // --- CẤU HÌNH QUAN TRỌNG ĐỂ 1.5 FLASH CHẠY ĐƯỢC ---
