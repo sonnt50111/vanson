@@ -17,7 +17,7 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 
 // --- CẤU HÌNH QUAN TRỌNG ĐỂ 1.5 FLASH CHẠY ĐƯỢC ---
 const model = genAI.getGenerativeModel({ 
-  model: "gemini-2.5-flash", // Bắt buộc dùng bản này mới không bị giới hạn 20 lần
+  model: "gemini-1.5-flash", // Bắt buộc dùng bản này mới không bị giới hạn 20 lần
   // Tắt toàn bộ bộ lọc an toàn để tránh bị lỗi "từ chối dịch"
   safetySettings: [
     { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
